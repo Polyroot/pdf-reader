@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static java.util.Objects.nonNull;
+
 @Service
 @Slf4j
 public class PdfParserService {
@@ -25,10 +27,12 @@ public class PdfParserService {
 
     public StreamingResponseBody getCards(MultipartFile inputFile) throws IOException {
 
-        log.info("input file with name {}", inputFile.getOriginalFilename());
+        String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
+
+        log.info("input file with name {}", fileName);
         PDDocument pdf = PDDocument.load(inputFile.getInputStream());
 
-        File fileDiploma = new File(String.format(fileDir + "/%s", inputFile.getOriginalFilename()));
+        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
         Writer output = new PrintWriter(fileDiploma, StandardCharsets.UTF_8);
         new PDFDomTree().writeText(pdf, output);
 
