@@ -2,15 +2,14 @@ package ru.kotigry.pdf_parser;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.tools.PDFText2HTML;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
-import org.fit.pdfdom.PDFDomTree;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -25,18 +24,43 @@ public class PdfParserService {
     @Value("${files.parsed_files_dir}")
     private String fileDir;
 
-    public StreamingResponseBody getCards(MultipartFile inputFile) throws IOException {
+//    public StreamingResponseBody getCards(MultipartFile inputFile) throws IOException {
+//
+//        String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
+//
+//        log.info("input file with name {}", fileName);
+//        PDDocument pdf = PDDocument.load(inputFile.getInputStream());
+//
+//        PDFText2HTML stripper = new PDFText2HTML();
+//        stripper.getText(pdf);
+//
+//        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
+////        Writer output = new PrintWriter(fileDiploma, StandardCharsets.UTF_8);
+////        new PDFDomTree().writeText(pdf, output);
+////
+////        output.close();
+//
+//        return out -> {
+//            createZipWithDiplomas(Set.of(fileDiploma), out);
+//            cleanCardsDir();
+//        };
+//    }
+
+
+    public StreamingResponseBody getParsedPdf(MultipartFile inputFile) throws IOException {
 
         String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
 
         log.info("input file with name {}", fileName);
         PDDocument pdf = PDDocument.load(inputFile.getInputStream());
 
-        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
-        Writer output = new PrintWriter(fileDiploma, StandardCharsets.UTF_8);
-        new PDFDomTree().writeText(pdf, output);
+        PDFText2HTML stripper = new PDFText2HTML();
+        String stripperText = stripper.getText(pdf);
 
-        output.close();
+        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileDiploma))){
+            writer.append(stripperText);
+        }
 
         return out -> {
             createZipWithDiplomas(Set.of(fileDiploma), out);
@@ -59,19 +83,19 @@ public class PdfParserService {
     }
 
 
-    private File getFile(byte[] parsedPdf, String pdfName) {
-
-        File fileDiploma = new File(String.format(fileDir + "/%s", pdfName));
-
-        try (FileOutputStream stream = new FileOutputStream(fileDiploma)) {
-            stream.write(parsedPdf);
-
-        } catch (Exception e) {
-            log.error(e.getLocalizedMessage(), e);
-        }
-        return fileDiploma;
-    }
-
+//    private File getFile(byte[] parsedPdf, String pdfName) {
+//
+//        File fileDiploma = new File(String.format(fileDir + "/%s", pdfName));
+//
+//        try (FileOutputStream stream = new FileOutputStream(fileDiploma)) {
+//            stream.write(parsedPdf);
+//
+//        } catch (Exception e) {
+//            log.error(e.getLocalizedMessage(), e);
+//        }
+//        return fileDiploma;
+//    }
+//
 //    @NonNull
 //    private byte[] parsePdfFile(MultipartFile inputFile) {
 //

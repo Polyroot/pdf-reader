@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import static org.springframework.http.ResponseEntity.*;
+
 
 @RestController
 @Slf4j
@@ -20,11 +22,9 @@ public class PdfParserController {
 
     @SneakyThrows
     @PostMapping(value="/inputPdf/get", produces="application/zip")
-    public ResponseEntity<StreamingResponseBody> getCards(@RequestParam("inputPdf") MultipartFile inputFile) {
+    public ResponseEntity<StreamingResponseBody> getParsedPdf(@RequestParam("inputPdf") MultipartFile inputFile) {
 
-        return ResponseEntity
-                .ok()
-                .body(pdfParserService.getCards(inputFile));
+        return ok().body(pdfParserService.getParsedPdf(inputFile));
     }
 
 }
