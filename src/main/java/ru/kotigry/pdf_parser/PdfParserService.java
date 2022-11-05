@@ -24,48 +24,38 @@ public class PdfParserService {
     @Value("${files.parsed_files_dir}")
     private String fileDir;
 
-//    public StreamingResponseBody getCards(MultipartFile inputFile) throws IOException {
-//
-//        String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
-//
-//        log.info("input file with name {}", fileName);
-//        PDDocument pdf = PDDocument.load(inputFile.getInputStream());
-//
-//        PDFText2HTML stripper = new PDFText2HTML();
-//        stripper.getText(pdf);
-//
-//        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
-////        Writer output = new PrintWriter(fileDiploma, StandardCharsets.UTF_8);
-////        new PDFDomTree().writeText(pdf, output);
-////
-////        output.close();
-//
-//        return out -> {
-//            createZipWithDiplomas(Set.of(fileDiploma), out);
-//            cleanCardsDir();
-//        };
-//    }
-
-
     public StreamingResponseBody getParsedPdf(MultipartFile inputFile) throws IOException {
 
-        String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
-
-        log.info("input file with name {}", fileName);
-        PDDocument pdf = PDDocument.load(inputFile.getInputStream());
-
-        PDFText2HTML stripper = new PDFText2HTML();
-        String stripperText = stripper.getText(pdf);
-
-        File fileDiploma = new File(String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.'))));
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileDiploma))){
-            writer.append(stripperText);
-        }
+        File parsedPdfFile = parsePdfFile(inputFile);
 
         return out -> {
-            createZipWithDiplomas(Set.of(fileDiploma), out);
+            createZipWithDiplomas(Set.of(parsedPdfFile), out);
             cleanCardsDir();
         };
+    }
+
+    private File parsePdfFile(MultipartFile inputFile) throws IOException {
+        log.info("input file with name {}", inputFile.getOriginalFilename());
+
+        String htmlText = pdfToHtml(inputFile);
+
+        String fileName = parsedFileName(inputFile);
+        File parsedPdfFile = new File(fileName);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(parsedPdfFile))){
+            writer.append(htmlText);
+        }
+        return parsedPdfFile;
+    }
+
+    private String parsedFileName(MultipartFile inputFile) {
+        String fileName = nonNull(inputFile.getOriginalFilename()) ? inputFile.getOriginalFilename() : "pdf";
+        return String.format(fileDir + "/%s.html", fileName.substring(0, fileName.lastIndexOf('.')));
+    }
+
+    private String pdfToHtml(MultipartFile inputFile) throws IOException {
+        PDDocument pdf = PDDocument.load(inputFile.getInputStream());
+        PDFText2HTML stripper = new PDFText2HTML();
+        return stripper.getText(pdf);
     }
 
     private void createZipWithDiplomas(Set<File> files, OutputStream out) throws IOException {
@@ -81,46 +71,6 @@ public class PdfParserService {
             }
         }
     }
-
-
-//    private File getFile(byte[] parsedPdf, String pdfName) {
-//
-//        File fileDiploma = new File(String.format(fileDir + "/%s", pdfName));
-//
-//        try (FileOutputStream stream = new FileOutputStream(fileDiploma)) {
-//            stream.write(parsedPdf);
-//
-//        } catch (Exception e) {
-//            log.error(e.getLocalizedMessage(), e);
-//        }
-//        return fileDiploma;
-//    }
-//
-//    @NonNull
-//    private byte[] parsePdfFile(MultipartFile inputFile) {
-//
-//        log.info("file parsing started:");
-//
-//        byte[] content = null;
-//
-//        try (InputStream fileInputStream = inputFile.getInputStream()) {
-//            try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(fileInputStream))) {
-//
-//                // Create a text extraction renderer
-//                LocationTextExtractionStrategy strategy = new LocationTextExtractionStrategy();
-//
-//                // Note: if you want to re-use the PdfCanvasProcessor, you must call PdfCanvasProcessor.reset()
-//                PdfCanvasProcessor parser = new PdfCanvasProcessor(strategy);
-//                parser.processPageContent(pdfDoc.getFirstPage());
-//
-//                content = strategy.getResultantText().getBytes(StandardCharsets.UTF_8);
-//            }
-//            log.info("file parsed successfully!");
-//        } catch (IOException e) {
-//            log.error(e.getLocalizedMessage(), e);
-//        }
-//        return content;
-//    }
 
     public void cleanCardsDir() {
         File diplomaDirectory = new File(fileDir);
